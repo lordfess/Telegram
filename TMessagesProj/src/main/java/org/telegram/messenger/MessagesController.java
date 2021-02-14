@@ -7348,7 +7348,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                             }
                         } else {
-                            if (newMsg == null && oldMsg.getId() > 0 || newMsg != null && newMsg.messageOwner.date > oldMsg.messageOwner.date) {
+                            if (value.top_message > 0 && newMsg == null && oldMsg.getId() > 0 || newMsg != null && newMsg.messageOwner.date > oldMsg.messageOwner.date) {
                                 dialogs_dict.put(key, value);
                                 dialogMessage.put(key, newMsg);
                                 if (oldMsg.messageOwner.peer_id.channel_id == 0) {
