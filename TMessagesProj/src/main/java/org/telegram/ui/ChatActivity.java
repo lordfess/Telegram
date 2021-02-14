@@ -226,6 +226,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -559,8 +560,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int startLoadFromMessageIdSaved;
     private int startLoadFromMessageOffset = Integer.MAX_VALUE;
     private boolean needSelectFromMessageId;
-    private int returnToMessageId;
     private int returnToLoadIndex;
+    private Stack<Integer> messageBackStack = new Stack<>();
     private int createUnreadMessageAfterId;
     private boolean createUnreadMessageAfterIdLoading;
     private boolean loadingFromOldPosition;
@@ -4432,6 +4433,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     int totalItemCount = chatAdapter.getItemCount();
                     if (firstVisibleItem == 0 && forwardEndReached[0]) {
                         if (dy >= 0) {
+                            messageBackStack.clear();
                             canShowPagedownButton = false;
                             updatePagedownButtonVisibility(true);
                         }
@@ -4619,7 +4621,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             pinnedMessageView.setOnClickListener(v -> {
                 wasManualScroll = true;
                 if (isThreadChat()) {
-                    scrollToMessageId(threadMessageId, 0, true, 0, true, 0);
+                    scrollToMessageId(threadMessageId, getLastVisibleMessageId(), true, 0, true, 0);
                 } else if (currentPinnedMessageId != 0) {
                     int currentPinned = currentPinnedMessageId;
 
@@ -4637,7 +4639,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (!forceScrollToFirst) {
                         forceNextPinnedMessageId = -forceNextPinnedMessageId;
                     }
-                    scrollToMessageId(currentPinned, 0, true, 0, true, forceNextPinnedMessageId);
+                    scrollToMessageId(currentPinned, getLastVisibleMessageId(), true, 0, true, forceNextPinnedMessageId);
                     updateMessagesVisiblePart(false);
                 }
             });
@@ -4955,8 +4957,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             textSelectionHelper.cancelTextSelectionRunnable();
             if (createUnreadMessageAfterId != 0) {
                 scrollToMessageId(createUnreadMessageAfterId, 0, false, returnToLoadIndex, true, 0);
-            } else if (returnToMessageId > 0) {
-                scrollToMessageId(returnToMessageId, 0, true, returnToLoadIndex, true, 0);
+            } else if (!messageBackStack.empty()) {
+                int toMessageId = messageBackStack.pop();
+                if (messageBackStack.empty() && toMessageId == last_message_id) {
+                    scrollToLastMessage();
+                } else {
+                    scrollToMessageId(toMessageId, -1, true, returnToLoadIndex, true, 0);
+                }
             } else {
                 scrollToLastMessage();
                 if (!pinnedMessageIds.isEmpty()) {
@@ -4964,6 +4971,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     forceNextPinnedMessageId = pinnedMessageIds.get(0);
                 }
             }
+        });
+        pagedownButton.setOnLongClickListener(view -> {
+            messageBackStack.clear();
+            scrollToLastMessage();
+            return true;
         });
 
         mentiondownButton = new FrameLayout(context);
@@ -7011,7 +7023,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         fragment.chatActivityDelegate = new ChatActivityDelegate() {
             @Override
             public void openReplyMessage(int mid) {
-                scrollToMessageId(mid, 0, true, 0, true, 0);
+                scrollToMessageId(mid, getLastVisibleMessageId(), true, 0, true, 0);
             }
 
             @Override
@@ -10538,11 +10550,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 showFloatingDateView(false);
             }
         }
-        returnToMessageId = fromMessageId;
+        if (fromMessageId == 0) {
+            messageBackStack.clear();
+        } else if (fromMessageId > 0) {
+            messageBackStack.push(fromMessageId);
+        }
         returnToLoadIndex = loadIndex;
         needSelectFromMessageId = select;
     }
 
+    private int getLastVisibleMessageId() {
+        int firstVisibleMessagePosition = chatLayoutManager.findFirstVisibleItemPosition();
+        MessageObject backToMessage = messages.get(firstVisibleMessagePosition - chatAdapter.messagesStartRow);
+        if (backToMessage.getId() == 0) {
+            return -1;
+        }
+        return backToMessage.getId();
+    }
 
     private void showPinnedProgress(boolean show) {
         if (show) {
@@ -10601,7 +10625,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         } else {
-            returnToMessageId = 0;
             newUnreadMessageCount = 0;
             if (pagedownButton.getTag() != null) {
                 pagedownButton.setTag(null);
@@ -10662,7 +10685,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         } else {
-            returnToMessageId = 0;
             if (mentiondownButton.getTag() != null) {
                 mentiondownButton.setTag(null);
                 if (mentiondownButtonAnimation != null) {
