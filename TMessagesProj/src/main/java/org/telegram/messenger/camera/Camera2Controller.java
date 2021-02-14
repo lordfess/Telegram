@@ -30,7 +30,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.provider.MediaStore;
 import android.util.Base64;
-import android.util.Log;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
@@ -305,11 +304,9 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 return;
             }
-            Log.d("RRR1", "Camera opening...");
             cameraManager.openCamera(cameraSession.cameraInfo.cameraId, new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
-                    Log.d("RRR1", "Camera opened");
                     cameraOpenCloseLock.release();
                     cameraSession.cameraInfo.camera = camera;
                     availableFlashModes.clear();
@@ -338,7 +335,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
 
                 @Override
                 public void onDisconnected(@NonNull CameraDevice camera) {
-                    Log.d("RRR1", "Camera disconnected");
                     cameraOpenCloseLock.release();
                     stopPreview(cameraSession);
                     cameraSession.cameraInfo.camera = null;
@@ -372,11 +368,9 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 return;
             }
-            Log.d("RRR1", "RCamera opening...");
             cameraManager.openCamera(cameraSession.cameraInfo.cameraId, new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
-                    Log.d("RRR1", "RCamera opened");
                     cameraOpenCloseLock.release();
                     if (configureCallback != null) {
                         configureCallback.run();
@@ -391,7 +385,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
 
                 @Override
                 public void onDisconnected(@NonNull CameraDevice camera) {
-                    Log.d("RRR1", "RCamera disconnected");
                     cameraOpenCloseLock.release();
                     stopPreview(cameraSession);
                     cameraSession.cameraInfo.camera = null;
@@ -441,9 +434,7 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
         if (s == null || previewSession != null || texture == null) {
             return;
         }
-
         Camera2Session session = (Camera2Session) s;
-        Log.d("RRR1", "Preview starting...");
 
         try {
             texture.setDefaultBufferSize(cameraSession.previewSize.getWidth(), cameraSession.previewSize.getHeight());
@@ -463,7 +454,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
 
                                 currentSession = previewSession;
                                 currentBuilder = previewRequestBuilder;
-                                Log.d("RRR1", "Preview started");
                             } catch (CameraAccessException e) {
                                 FileLog.e(e);
                             }
@@ -476,7 +466,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
 
                         @Override
                         public void onClosed(@NonNull CameraCaptureSession session) {
-                            Log.d("RRR1", "Preview session closed");
                             previewSession = null;
                         }
                     }, cameraThreadHandler);
@@ -490,7 +479,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
         if (session == null || previewSession == null) {
             return;
         }
-        Log.d("RRR1", "Preview session stopping");
         previewSession.close();
         previewSession = null;
     }
@@ -508,20 +496,17 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
     private final CameraCaptureSession.CaptureCallback captureCallback
             = new CameraCaptureSession.CaptureCallback() {
         private void processResult(CaptureResult result) {
-            Log.d("RRR1", "Process state: " + captureState);
             switch (captureState) {
                 case PREVIEW: {
                     break;
                 }
                 case WAIT_AF: {
                     Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
-                    Log.d("RRR1", "afState: " + afState);
                     if (afState == null) {
                         captureStillPicture();
                     } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
                             CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
                         Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                        Log.d("RRR1", "aeState: " + aeState);
                         if (aeState == null ||
                                 aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
                             captureState = CaptureState.SHOT;
@@ -534,7 +519,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
                 }
                 case WAIT_AE: {
                     Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                    Log.d("RRR1", "STATE in WAE: " + aeState);
                     if (aeState == null ||
                             aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
                             aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED ||
@@ -594,7 +578,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
     }
 
     private void unlockFocus() {
-        Log.d("RRR1", "Unlock focus");
         captureSession.close();
         startPreview(cameraSession);
     }
@@ -629,7 +612,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
 
         imageReader = ImageReader.newInstance(session.pictureSize.getWidth(), session.pictureSize.getHeight(), session.pictureFormat, 1);
         imageReader.setOnImageAvailableListener(reader -> {
-            Log.d("RRR1", "Send image");
             byte[] data = null;
             try {
                 Image image = reader.acquireNextImage();
@@ -668,7 +650,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
                     try {
                         Matrix matrix = new Matrix();
                         int orient = getOrientation(data);
-                        Log.d("RRRR", "Orientation: " + orient);
                         matrix.setRotate(getOrientation(data));
                         matrix.postScale(-1, 1);
                         Bitmap scaled = Bitmaps.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
@@ -713,7 +694,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
                     new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession s) {
-                            Log.d("RRR1", "Capture session opened");
                             try {
                                 captureSession = s;
                                 captureRequestBuilder = s.getDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -739,7 +719,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
 
                         @Override
                         public void onClosed(@NonNull CameraCaptureSession session) {
-                            Log.d("RRR1", "Capture session closed");
                             captureSession = null;
                         }
                     }, cameraThreadHandler);
@@ -798,7 +777,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
                     new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession s) {
-                            Log.d("RRR1", "Recored session created!");
                             try {
                                 captureSession = s;
                                 captureRequestBuilder = s.getDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
@@ -839,7 +817,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
 
                         @Override
                         public void onClosed(@NonNull CameraCaptureSession session) {
-                            Log.d("RRR1", "Recored session closed");
                             captureSession = null;
                         }
                     }, cameraThreadHandler);
@@ -952,7 +929,6 @@ public class Camera2Controller implements CameraController, MediaRecorder.OnInfo
     public void close(final CameraSession s, final CountDownLatch countDownLatch, final Runnable beforeDestroyRunnable) {
         Camera2Session session = (Camera2Session) s;
         session.destroy();
-        Log.d("RRR1", "Close camera and session");
         cameraThreadHandler.post(() -> {
             if (beforeDestroyRunnable != null) {
                 beforeDestroyRunnable.run();

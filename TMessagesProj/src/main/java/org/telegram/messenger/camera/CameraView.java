@@ -18,7 +18,6 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -221,7 +220,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
         checkPreviewMatrix();
-        Log.d("RRR1", String.format("onSurfaceTextureSizeChanged: %d:%d", width, height));
     }
 
     @Override
