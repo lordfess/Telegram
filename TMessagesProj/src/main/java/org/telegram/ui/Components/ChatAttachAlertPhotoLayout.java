@@ -24,7 +24,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.hardware.Camera;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
@@ -62,7 +61,8 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.messenger.camera.CameraController;
+import org.telegram.messenger.camera.CameraModule;
+import org.telegram.messenger.camera.CameraSession;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -745,7 +745,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 return;
             }
             openPhotoViewer(null, false, false);
-            CameraController.getInstance().stopPreview(cameraView.getCameraSession());
+            CameraModule.getInstance().getCameraController().stopPreview(cameraView.getCameraSession());
         });
 
         zoomControlView = new ZoomControlView(context);
@@ -796,7 +796,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000);
                 };
                 AndroidUtilities.lockOrientation(parentAlert.baseFragment.getParentActivity());
-                CameraController.getInstance().recordVideo(cameraView.getCameraSession(), outputFile, parentAlert.avatarPicker != 0, (thumbPath, duration) -> {
+                CameraModule.getInstance().getCameraController().recordVideo(cameraView.getCameraSession(), outputFile, parentAlert.avatarPicker != 0, (thumbPath, duration) -> {
                     if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
                         return;
                     }
@@ -823,7 +823,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     outputFile = null;
                 }
                 resetRecordState();
-                CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), true);
+                CameraModule.getInstance().getCameraController().stopVideoRecording(cameraView.getCameraSession(), true);
             }
 
             @Override
@@ -833,14 +833,14 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
                 if (shutterButton.getState() == ShutterButton.State.RECORDING) {
                     resetRecordState();
-                    CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), false);
+                    CameraModule.getInstance().getCameraController().stopVideoRecording(cameraView.getCameraSession(), false);
                     shutterButton.setState(ShutterButton.State.DEFAULT, true);
                     return;
                 }
                 final File cameraFile = AndroidUtilities.generatePicturePath(parentAlert.baseFragment instanceof ChatActivity && ((ChatActivity) parentAlert.baseFragment).isSecretChat(), null);
                 final boolean sameTakePictureOrientation = cameraView.getCameraSession().isSameTakePictureOrientation();
                 cameraView.getCameraSession().setFlipFront(parentAlert.baseFragment instanceof ChatActivity || parentAlert.avatarPicker == 2);
-                takingPhoto = CameraController.getInstance().takePicture(cameraFile, cameraView.getCameraSession(), () -> {
+                takingPhoto = CameraModule.getInstance().getCameraController().takePicture(cameraFile, cameraView.getCameraSession(), () -> {
                     takingPhoto = false;
                     if (cameraFile == null || parentAlert.baseFragment == null) {
                         return;
@@ -926,9 +926,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (flashAnimationInProgress || cameraView == null || !cameraView.isInitied() || !cameraOpened) {
                     return;
                 }
-                String current = cameraView.getCameraSession().getCurrentFlashMode();
-                String next = cameraView.getCameraSession().getNextFlashMode();
-                if (current.equals(next)) {
+                int current = cameraView.getCameraSession().getCurrentFlashMode();
+                int next = cameraView.getCameraSession().getNextFlashMode();
+                if (current == next) {
                     return;
                 }
                 cameraView.getCameraSession().setCurrentFlashMode(next);
@@ -1232,7 +1232,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 zoomControlView.setZoom(0.0f, false);
                 cameraZoom = 0.0f;
                 cameraView.setZoom(0.0f);
-                CameraController.getInstance().startPreview(cameraView.getCameraSession());
+                CameraModule.getInstance().getCameraController().startPreview(cameraView.getCameraSession());
             }
             return;
         }
@@ -1285,7 +1285,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     zoomControlView.setZoom(0.0f, false);
                     cameraZoom = 0.0f;
                     cameraView.setZoom(0.0f);
-                    CameraController.getInstance().startPreview(cameraView.getCameraSession());
+                    CameraModule.getInstance().getCameraController().startPreview(cameraView.getCameraSession());
                 }
                 if (cancelTakingPhotos && cameraPhotos.size() == 1) {
                     for (int a = 0, size = cameraPhotos.size(); a < size; a++) {
@@ -1471,17 +1471,17 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         return null;
     }
 
-    private void setCameraFlashModeIcon(ImageView imageView, String mode) {
+    private void setCameraFlashModeIcon(ImageView imageView, int mode) {
         switch (mode) {
-            case Camera.Parameters.FLASH_MODE_OFF:
+            case CameraSession.FlashMode.FLASH_MODE_OFF:
                 imageView.setImageResource(R.drawable.flash_off);
                 imageView.setContentDescription(LocaleController.getString("AccDescrCameraFlashOff", R.string.AccDescrCameraFlashOff));
                 break;
-            case Camera.Parameters.FLASH_MODE_ON:
+            case CameraSession.FlashMode.FLASH_MODE_ON:
                 imageView.setImageResource(R.drawable.flash_on);
                 imageView.setContentDescription(LocaleController.getString("AccDescrCameraFlashOn", R.string.AccDescrCameraFlashOn));
                 break;
-            case Camera.Parameters.FLASH_MODE_AUTO:
+            case CameraSession.FlashMode.FLASH_MODE_AUTO:
                 imageView.setImageResource(R.drawable.flash_auto);
                 imageView.setContentDescription(LocaleController.getString("AccDescrCameraFlashAuto", R.string.AccDescrCameraFlashAuto));
                 break;
@@ -1509,15 +1509,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     deviceHasGoodCamera = false;
                 } else {
                     if (request || SharedConfig.hasCameraCache) {
-                        CameraController.getInstance().initCamera(null);
+                        CameraModule.getInstance().getCameraController().initCamera(null);
                     }
-                    deviceHasGoodCamera = CameraController.getInstance().isCameraInitied();
+                    deviceHasGoodCamera = CameraModule.getInstance().getCameraController().isCameraInitied();
                 }
             } else {
                 if (request || SharedConfig.hasCameraCache) {
-                    CameraController.getInstance().initCamera(null);
+                    CameraModule.getInstance().getCameraController().initCamera(null);
                 }
-                deviceHasGoodCamera = CameraController.getInstance().isCameraInitied();
+                deviceHasGoodCamera = CameraModule.getInstance().getCameraController().isCameraInitied();
             }
         }
         if ((old != deviceHasGoodCamera || old2 != noCameraPermissions) && adapter != null) {
@@ -1646,15 +1646,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             parentAlert.getContainer().addView(cameraView, 1, new FrameLayout.LayoutParams(itemSize, itemSize));
             cameraView.setDelegate(new CameraView.CameraViewDelegate() {
                 @Override
-                public void onCameraCreated(Camera camera) {
+                public void onCameraCreated() {
 
                 }
 
                 @Override
                 public void onCameraInit() {
-                    String current = cameraView.getCameraSession().getCurrentFlashMode();
-                    String next = cameraView.getCameraSession().getNextFlashMode();
-                    if (current.equals(next)) {
+                    int current = cameraView.getCameraSession().getCurrentFlashMode();
+                    int next = cameraView.getCameraSession().getNextFlashMode();
+                    if (current == next) {
                         for (int a = 0; a < 2; a++) {
                             flashModeButton[a].setVisibility(View.INVISIBLE);
                             flashModeButton[a].setAlpha(0.0f);
@@ -2306,7 +2306,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (!requestingPermissions) {
             if (cameraView != null && shutterButton.getState() == ShutterButton.State.RECORDING) {
                 resetRecordState();
-                CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), false);
+                CameraModule.getInstance().getCameraController().stopVideoRecording(cameraView.getCameraSession(), false);
                 shutterButton.setState(ShutterButton.State.DEFAULT, true);
             }
             if (cameraOpened) {

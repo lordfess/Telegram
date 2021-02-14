@@ -18,7 +18,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -64,7 +64,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
 
     public interface CameraViewDelegate {
-        void onCameraCreated(Camera camera);
+        void onCameraCreated();
         void onCameraInit();
     }
 
@@ -111,9 +111,9 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     }
 
     public boolean hasFrontFaceCamera() {
-        ArrayList<CameraInfo> cameraInfos = CameraController.getInstance().getCameras();
+        ArrayList<CameraInfo> cameraInfos = CameraModule.getInstance().getCameraController().getCameras();
         for (int a = 0; a < cameraInfos.size(); a++) {
-            if (cameraInfos.get(a).frontCamera != 0) {
+            if (cameraInfos.get(a).isFrontface()) {
                 return true;
             }
         }
@@ -122,7 +122,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     public void switchCamera() {
         if (cameraSession != null) {
-            CameraController.getInstance().close(cameraSession, null, null);
+            CameraModule.getInstance().getCameraController().close(cameraSession, null, null);
             cameraSession = null;
         }
         initied = false;
@@ -132,13 +132,13 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     public void initCamera() {
         CameraInfo info = null;
-        ArrayList<CameraInfo> cameraInfos = CameraController.getInstance().getCameras();
+        ArrayList<CameraInfo> cameraInfos = CameraModule.getInstance().getCameraController().getCameras();
         if (cameraInfos == null) {
             return;
         }
         for (int a = 0; a < cameraInfos.size(); a++) {
             CameraInfo cameraInfo = cameraInfos.get(a);
-            if (isFrontface && cameraInfo.frontCamera != 0 || !isFrontface && cameraInfo.frontCamera == 0) {
+            if (isFrontface && cameraInfo.isFrontface() || !isFrontface && !cameraInfo.isFrontface()) {
                 info = cameraInfo;
                 break;
             }
@@ -192,18 +192,18 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
         if (previewSize != null && surfaceTexture != null) {
             surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-            cameraSession = new CameraSession(info, previewSize, pictureSize, ImageFormat.JPEG);
+            cameraSession = CameraModule.getInstance().createCameraSession(info, previewSize, pictureSize, ImageFormat.JPEG);
             if (optimizeForBarcode) {
                 cameraSession.setOptimizeForBarcode(optimizeForBarcode);
             }
-            CameraController.getInstance().open(cameraSession, surfaceTexture, () -> {
+            CameraModule.getInstance().getCameraController().open(cameraSession, surfaceTexture, () -> {
                 if (cameraSession != null) {
                     cameraSession.setInitied();
                 }
                 checkPreviewMatrix();
             }, () -> {
                 if (delegate != null) {
-                    delegate.onCameraCreated(cameraSession.cameraInfo.camera);
+                    delegate.onCameraCreated();
                 }
             });
         }
@@ -221,12 +221,13 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
         checkPreviewMatrix();
+        Log.d("RRR1", String.format("onSurfaceTextureSizeChanged: %d:%d", width, height));
     }
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
         if (cameraSession != null) {
-            CameraController.getInstance().close(cameraSession, null, null);
+            CameraModule.getInstance().getCameraController().close(cameraSession, null, null);
         }
         return false;
     }
@@ -368,7 +369,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     public void destroy(boolean async, final Runnable beforeDestroyRunnable) {
         if (cameraSession != null) {
             cameraSession.destroy();
-            CameraController.getInstance().close(cameraSession, !async ? new CountDownLatch(1) : null, beforeDestroyRunnable);
+            CameraModule.getInstance().getCameraController().close(cameraSession, !async ? new CountDownLatch(1) : null, beforeDestroyRunnable);
         }
     }
 

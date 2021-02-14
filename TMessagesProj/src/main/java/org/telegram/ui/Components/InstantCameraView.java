@@ -75,6 +75,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
 import org.telegram.messenger.camera.CameraInfo;
+import org.telegram.messenger.camera.CameraModule;
 import org.telegram.messenger.camera.CameraSession;
 import org.telegram.messenger.camera.Size;
 import org.telegram.messenger.video.MP4Builder;
@@ -397,7 +398,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     public void destroy(boolean async, final Runnable beforeDestroyRunnable) {
         if (cameraSession != null) {
             cameraSession.destroy();
-            CameraController.getInstance().close(cameraSession, !async ? new CountDownLatch(1) : null, beforeDestroyRunnable);
+            CameraModule.getInstance().getCameraController().close(cameraSession, !async ? new CountDownLatch(1) : null, beforeDestroyRunnable);
         }
     }
 
@@ -538,7 +539,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     cameraThread = null;
                 }
                 if (cameraSession != null) {
-                    CameraController.getInstance().close(cameraSession, null, null);
+                    CameraModule.getInstance().getCameraController().close(cameraSession, null, null);
                 }
                 return true;
             }
@@ -802,7 +803,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
         if (cameraSession != null) {
             cameraSession.destroy();
-            CameraController.getInstance().close(cameraSession, null, null);
+            CameraModule.getInstance().getCameraController().close(cameraSession, null, null);
             cameraSession = null;
         }
         isFrontface = !isFrontface;
@@ -812,7 +813,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     }
 
     private boolean initCamera() {
-        ArrayList<CameraInfo> cameraInfos = CameraController.getInstance().getCameras();
+        ArrayList<CameraInfo> cameraInfos = CameraModule.getInstance().getCameraController().getCameras();
         if (cameraInfos == null) {
             return false;
         }
@@ -892,9 +893,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
 
             surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-            cameraSession = new CameraSession(selectedCamera, previewSize, pictureSize, ImageFormat.JPEG);
+            cameraSession = CameraModule.getInstance().createCameraSession(selectedCamera, previewSize, pictureSize, ImageFormat.JPEG);
             cameraThread.setCurrentSession(cameraSession);
-            CameraController.getInstance().openRound(cameraSession, surfaceTexture, () -> {
+            CameraModule.getInstance().getCameraController().openRound(cameraSession, surfaceTexture, () -> {
                 if (cameraSession != null) {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("camera initied");
