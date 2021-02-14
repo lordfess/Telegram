@@ -19,7 +19,6 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Typeface;
 import android.graphics.drawable.ShapeDrawable;
-import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -52,7 +51,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MrzRecognizer;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.camera.CameraController;
+import org.telegram.messenger.camera.CameraModule;
 import org.telegram.messenger.camera.CameraSession;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.messenger.camera.Size;
@@ -70,7 +69,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 @TargetApi(18)
-public class CameraScanActivity extends BaseFragment implements Camera.PreviewCallback {
+public class CameraScanActivity extends BaseFragment implements CameraSession.PreviewCallback {
 
     private TextView titleTextView;
     private TextView descriptionText;
@@ -165,7 +164,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
 
     public CameraScanActivity(int type) {
         super();
-        CameraController.getInstance().initCamera(() -> {
+        CameraModule.getInstance().getCameraController().initCamera(() -> {
             if (cameraView != null) {
                 cameraView.initCamera();
             }
@@ -328,7 +327,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
         cameraView.setOptimizeForBarcode(true);
         cameraView.setDelegate(new CameraView.CameraViewDelegate() {
             @Override
-            public void onCameraCreated(Camera camera) {
+            public void onCameraCreated() {
 
             }
 
@@ -551,7 +550,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
     }
 
     @Override
-    public void onPreviewFrame(final byte[] data, final Camera camera) {
+    public void onPreviewFrame(final byte[] data) {
         handler.post(() -> {
             try {
                 Size size = cameraView.getPreviewSize();
@@ -559,7 +558,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
                     final MrzRecognizer.Result res = MrzRecognizer.recognize(data, size.getWidth(), size.getHeight(), cameraView.getCameraSession().getDisplayOrientation());
                     if (res != null && !TextUtils.isEmpty(res.firstName) && !TextUtils.isEmpty(res.lastName) && !TextUtils.isEmpty(res.number) && res.birthDay != 0 && (res.expiryDay != 0 || res.doesNotExpire) && res.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
                         recognized = true;
-                        camera.stopPreview();
+                        CameraModule.getInstance().getCameraController().stopPreview(cameraView.getCameraSession());
                         AndroidUtilities.runOnUIThread(() -> {
                             recognizedMrzView.setText(res.rawMRZ);
                             recognizedMrzView.animate().setDuration(200).alpha(1f).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
@@ -570,7 +569,6 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
                         });
                     }
                 } else {
-                    int format = camera.getParameters().getPreviewFormat();
                     int side = (int) (Math.min(size.getWidth(), size.getHeight()) / 1.5f);
                     int x = (size.getWidth() - side) / 2;
                     int y = (size.getHeight() - side) / 2;
@@ -578,7 +576,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
                     String text = tryReadQr(data, size, x, y, side, null);
                     if (text != null) {
                         recognized = true;
-                        camera.stopPreview();
+                        CameraModule.getInstance().getCameraController().stopPreview(cameraView.getCameraSession());
                         AndroidUtilities.runOnUIThread(() -> {
                             if (delegate != null) {
                                 delegate.didFindQr(text);
