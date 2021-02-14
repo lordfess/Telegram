@@ -514,6 +514,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean scrollToTopUnReadOnResume;
     private long dialog_id;
     private int lastLoadIndex = 1;
+    private int rollSelectedIndex = 0;
     private SparseArray<MessageObject>[] selectedMessagesIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private SparseArray<MessageObject>[] selectedMessagesCanCopyIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private SparseArray<MessageObject>[] selectedMessagesCanStarIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
@@ -2180,7 +2181,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
-        selectedMessagesCountTextView.setOnTouchListener((v, event) -> true);
+        selectedMessagesCountTextView.setOnClickListener(v -> {
+            if (rollSelectedIndex >= selectedMessagesIds[0].size()) {
+                rollSelectedIndex = 0;
+            }
+            scrollToMessageId(selectedMessagesIds[0].valueAt(rollSelectedIndex).getId(), 0, false, 0, true, 0);
+            rollSelectedIndex++;
+        });
 
         if (currentEncryptedChat == null) {
             actionModeViews.add(actionMode.addItemWithWidth(save_to, R.drawable.msg_download, AndroidUtilities.dp(54), LocaleController.getString("SaveToMusic", R.string.SaveToMusic)));
@@ -19415,6 +19422,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             selectedMessagesCanCopyIds[a].clear();
             selectedMessagesCanStarIds[a].clear();
         }
+        rollSelectedIndex = 0;
         hideActionMode();
         updatePinnedMessageView(true);
         updateVisibleRows();
