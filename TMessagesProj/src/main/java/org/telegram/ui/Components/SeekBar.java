@@ -154,6 +154,10 @@ public class SeekBar {
         lineHeight = value;
     }
 
+    public void setAlpha(float alpha) {
+        paint.setAlpha((int)(255 * alpha));
+    }
+
     public void draw(Canvas canvas) {
         rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, width - thumbWidth / 2, height / 2 + lineHeight / 2);
         paint.setColor(selected ? backgroundSelectedColor : backgroundColor);

@@ -43,6 +43,7 @@ public class SeekBarWaveform {
     private boolean isUnread;
 
     private float waveScaling = 1f;
+    private float alpha = 1f;
 
     public SeekBarWaveform(Context context) {
         if (paintInner == null) {
@@ -161,6 +162,14 @@ public class SeekBarWaveform {
         height = h;
     }
 
+    public int getWidth() {
+        return width;
+    }
+
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+    }
+
     public void draw(Canvas canvas, View parentView) {
         if (waveformBytes == null || width == 0) {
             return;
@@ -178,6 +187,8 @@ public class SeekBarWaveform {
         isUnread = messageObject != null && !messageObject.isOutOwner() && messageObject.isContentUnread() && thumbX == 0;
         paintInner.setColor(isUnread ? outerColor : (selected ? selectedColor : innerColor));
         paintOuter.setColor(outerColor);
+        paintInner.setAlpha((int)(55 + 200 * alpha));
+        paintOuter.setAlpha((int)(55 + 200 * alpha));
 
         int y = (height - AndroidUtilities.dp(14)) / 2;
         int barNum = 0;

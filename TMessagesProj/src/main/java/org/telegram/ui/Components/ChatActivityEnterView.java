@@ -449,6 +449,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     boolean doneButtonEnabled = true;
     private ValueAnimator doneButtonColorAnimator;
 
+    private Rect selectedStickerRect = new Rect();
+    public Rect getSelectedStickerRect() {
+        return selectedStickerRect;
+    }
+
     private Runnable openKeyboardRunnable = new Runnable() {
         @Override
         public void run() {
@@ -5240,6 +5245,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     audioSendButton.setVisibility(View.VISIBLE);
                 }
 
+                //recordDot.setScaleX(0);
+                //recordDot.setScaleY(0);
+                //recordTimerView.setAlpha(0);
+                //audioVideoButtonContainer.setAlpha(0);
+                //slideText.setAlpha(0);
+
+
                 AnimatorSet iconsAnimator = new AnimatorSet();
                 iconsAnimator.playTogether(
                         ObjectAnimator.ofFloat(emojiButton[0], View.SCALE_Y, 1),
@@ -5249,8 +5261,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         ObjectAnimator.ofFloat(emojiButton[1], View.SCALE_X, 1),
                         ObjectAnimator.ofFloat(emojiButton[1], View.ALPHA, 1),
 
-                        ObjectAnimator.ofFloat(recordDot, View.SCALE_Y, 0),
-                        ObjectAnimator.ofFloat(recordDot, View.SCALE_X, 0),
+                        //ObjectAnimator.ofFloat(recordDot, View.SCALE_Y, 0),
+                        //ObjectAnimator.ofFloat(recordDot, View.SCALE_X, 0),
 
                         ObjectAnimator.ofFloat(audioVideoButtonContainer, View.ALPHA, 1.0f)
                 );
@@ -5282,8 +5294,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
                 AnimatorSet recordTimer = new AnimatorSet();
                 recordTimer.playTogether(
-                        ObjectAnimator.ofFloat(recordTimerView, View.ALPHA, 0.0f),
-                        ObjectAnimator.ofFloat(recordTimerView, View.TRANSLATION_X, AndroidUtilities.dp(40)),
+                        //ObjectAnimator.ofFloat(recordTimerView, View.ALPHA, 0.0f),
+                        //ObjectAnimator.ofFloat(recordTimerView, View.TRANSLATION_X, AndroidUtilities.dp(40)),
                         ObjectAnimator.ofFloat(slideText, View.ALPHA, 0.0f),
                         ObjectAnimator.ofFloat(slideText, View.TRANSLATION_X, AndroidUtilities.dp(40))
                 );
@@ -6119,6 +6131,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                     setStickersExpanded(false, true, false);
                 }
+
+                int t = view.getTop();
+                int l = view.getLeft();
+                selectedStickerRect.top = t;
+                selectedStickerRect.left = l;
+                selectedStickerRect.bottom = view.getBottom();
+                selectedStickerRect.right = view.getRight();
                 ChatActivityEnterView.this.onStickerSelected(sticker, query, parent, false, notify, scheduleDate);
                 if ((int) dialog_id == 0 && MessageObject.isGifDocument(sticker)) {
                     accountInstance.getMessagesController().saveGif(parent, sticker);
@@ -6134,6 +6153,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             @Override
             public void onGifSelected(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate) {
+                int t = view.getTop();
+                int l = view.getLeft();
+                selectedStickerRect.top = t;
+                selectedStickerRect.left = l;
+                selectedStickerRect.bottom = view.getBottom();
+                selectedStickerRect.right = view.getRight();
+
                 if (isInScheduleMode() && scheduleDate == 0) {
                     AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (n, s) -> onGifSelected(view, gif, query, parent, n, s));
                 } else {

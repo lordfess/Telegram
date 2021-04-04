@@ -1376,7 +1376,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public long getMoveDuration() {
-        return 220;
+        return 500;
     }
 
     @Override

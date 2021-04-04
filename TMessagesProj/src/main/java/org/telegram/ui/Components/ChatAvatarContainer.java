@@ -42,6 +42,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.AnimationSettingsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.MediaActivity;
 import org.telegram.ui.ProfileActivity;
@@ -191,6 +192,12 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     }
 
     private void openProfile(boolean byAvatar) {
+        if (true) {
+            AnimationSettingsActivity fragment = new AnimationSettingsActivity();
+            parentFragment.presentFragment(fragment);
+            return;
+        }
+
         if (byAvatar && (AndroidUtilities.isTablet() || AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y || !avatarImageView.getImageReceiver().hasNotThumb())) {
             byAvatar = false;
         }

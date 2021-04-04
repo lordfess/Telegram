@@ -153,7 +153,7 @@ public class VoiceMessageEnterTransition {
         });
 
         animator.setInterpolator(new LinearInterpolator());
-        animator.setDuration(220);
+        animator.setDuration(500);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
