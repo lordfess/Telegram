@@ -285,6 +285,7 @@ android {
             ext {
                 abiVersionCode = 9
             }
+            applicationId 'com.lf.contest'
         }
     }
 

@@ -14834,6 +14834,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (messageObject.replyMessageObject != null) {
                     cell.setTopEditSize(chatActivityEnterTopView.getHeight());
                 }
+                cell.setLayoutBottom(chatListView.getBottom() - chatListView.getTop() - AndroidUtilities.dp(3));
                 cell.setEditSize(editSize);
                 cell.setReplyOffset(replyNameTextView.getLeft());
                 cell.setVoiceTransitionInProgress(true);

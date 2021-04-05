@@ -6602,6 +6602,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         emptyEditSize = size;
     }
 
+    private int layoutBottom = 0;
+    public void setLayoutBottom(int bottom) {
+        layoutBottom = bottom;
+    }
+
     private ChatMessageCell anchorCell = null;
     public void setAnchorCell(ChatMessageCell cell) {
         anchorCell = cell;
@@ -6633,7 +6638,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else {
                 int anchorPos = this.totalHeight;
                 if (anchorCell != null) {
-                    anchorPos += 1664 - anchorCell.getBottom(); // TODO top edit height
+                    anchorPos += layoutBottom - anchorCell.getBottom(); // TODO top edit height
                 }
                 if (currentMessageObject.type == 0 && !currentMessageObject.isWebpage()) {
                     int start = editSize;
